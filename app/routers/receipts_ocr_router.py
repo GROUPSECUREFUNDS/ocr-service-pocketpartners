@@ -6,11 +6,11 @@ from ..settings.settings_service import settings
 from ..dependencies.dependecies_services import get_gateway_service
 
 router = APIRouter(
-    prefix="/ocr-receipts",
-    tags=["OCR Process"]
+    prefix="/receipt-ocr",
+    tags=["Receipt OCR"]
 )
 
-@router.post(path="/")
+@router.post(path="")
 async def ocr_process(
     body:OcrRequest,
     gateway_service: GatewayService = Depends(get_gateway_service)

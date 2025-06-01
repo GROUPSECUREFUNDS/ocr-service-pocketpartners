@@ -1,4 +1,5 @@
 from ..settings import settings_service
+from ..dtos.OcrResponse import OcrResponse
 from groq import Groq
 import json
 
@@ -10,40 +11,30 @@ class GroqService:
     def __init__(self):
         self.client = Groq(api_key=self.apiKey)
     
-    def getJsonFromOcrText(self,text:str)->str:
-        question:str = f"Ordena el siguiente texto y retornalo en un json por clave-valor: {text}"
-        role:str = "user"
+    def getJsonFromOcrText(self,text:str)->OcrResponse:
+        system_prompt:str = (
+            "Eres una API que extrae datos de recibos OCR. "
+            "Responde solo con un objeto JSON con este formato:\n"
+            '{'
+            '"amount": 0.0, '
+            '"name": "string", '
+            '"issueDate": "YYYY-MM-DD", '
+            '"receiptNumber": "string", '
+            '"dataFields": { "key": "value" }'
+            '}'
+        )
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Extrae los datos del texto OCR: {text}"}
+        ]
         
         chat_completion = self.client.chat.completions.create(
-            messages=[
-                {
-                    "role":"user",
-                    "content": question
-                }
-            ],
-            model= self.model
+            model=self.model,
+            messages=messages,
+            response_format={"type": "json_object"}
         )
-        result = chat_completion.choices[0].message.content
-        return result
+        result_str = chat_completion.choices[0].message.content
+        result_dict = json.loads(result_str)
+        return OcrResponse(**result_dict)
     
-    @staticmethod
-    def extract_json_from_text(text: str) -> dict:
-        start = text.find('{')
-        if start == -1:
-            raise ValueError("No opening brace found")
-
-        # Pila para encontrar el cierre correcto
-        stack = []
-        for i in range(start, len(text)):
-            if text[i] == '{':
-                stack.append('{')
-            elif text[i] == '}':
-                stack.pop()
-                if not stack:
-                    end = i + 1
-                    json_str = text[start:end]
-                    try:
-                        return json.loads(json_str)
-                    except json.JSONDecodeError as e:
-                        raise ValueError(f"Error decoding JSON: {e}")
-        raise ValueError("No valid JSON object found")

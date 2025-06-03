@@ -14,11 +14,10 @@ class GatewayService:
     
     async def ocrProcess(self,urlImage:str)-> OcrResponse:
         extractData:OcrProcess = await self.ocrService.doOcrFromImageUrl(urlImage)
-        textFromGroq:str =  self.groqService.getJsonFromOcrText(extractData.text) 
-        textToJson:dict = GroqService.extract_json_from_text(textFromGroq)
+        jsonFromGroq:OcrResponse =  self.groqService.getJsonFromOcrText(extractData.text) 
         imageId:str =  self.uploadService.upload_image(extractData.imageProccesed)["imageId"]
-        
-        return OcrResponse(imagePath=imageId,text=textToJson)
+        jsonFromGroq.imagePath = imageId
+        return jsonFromGroq
         
         
         
